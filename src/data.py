@@ -126,8 +126,9 @@ def make_submission(
     NO2 before CO, unlike `TARGETS`).
     """
     if targets is None:
-        # Follow the sample file's own column order, not ours.
-        targets = [c for c in sample_submission.columns if c != "id"]
+        # Follow the sample file's own column order, not ours. Skip the parsed
+        # timestamp that `load_raw` adds: it is ours, not part of the format.
+        targets = [c for c in sample_submission.columns if c not in ("id", TIME_COL)]
     targets = list(targets)
     sub = sample_submission[["id"]].copy()
 

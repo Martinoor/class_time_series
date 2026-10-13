@@ -3,7 +3,6 @@ pandas>=2.0
 numpy>=1.24
 scikit-learn>=1.3
 # Modelling
-lightgbm>=4.0  # not used: dropped per the assignment PDF
 statsmodels>=0.14
 # Features
 holidays>=0.40

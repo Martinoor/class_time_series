@@ -115,3 +115,13 @@ def test_load_raw_on_the_real_files():
     assert len(d["test"]) == 504
     assert d["train"]["datetime"].is_monotonic_increasing
     assert d["test"]["datetime"].min() - d["train"]["datetime"].max() == pd.Timedelta(hours=1)
+
+
+def test_submission_ignores_the_parsed_datetime_column(tmp_path):
+    """`load_raw` adds a `datetime` column to the sample; it must not become a target."""
+    sample = make_sample()
+    sample["datetime"] = pd.to_datetime(sample["id"], format="%Y-%m-%d %H")
+    preds = pd.DataFrame({c: np.ones(len(sample)) for c in TARGETS})
+    make_submission(preds, sample, tmp_path / "s.csv")
+    written = pd.read_csv(tmp_path / "s.csv")
+    assert list(written.columns) == ["id"] + SAMPLE_ORDER
