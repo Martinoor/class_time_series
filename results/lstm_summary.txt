@@ -1,0 +1,12 @@
+primary  avg_MAE=7.222  best_epoch=14  117s
+            CO    NO2     O3   PM10  PM25
+observed  0.09  17.17  49.94  11.51  7.61
+lstm      0.04  14.11  48.79   7.77  2.70
+sep2023  avg_MAE=8.854  best_epoch=4  139s
+            CO    NO2    O3   PM10   PM25
+observed  0.23  51.64  75.6  14.15  11.34
+lstm      0.05  13.26  40.0   6.55   2.62
+fold_0   avg_MAE=6.239  best_epoch=6  181s
+            CO    NO2     O3   PM10   PM25
+observed  0.10  23.88  50.33  16.13  10.64
+lstm      0.03   9.83  37.09   4.64   1.66

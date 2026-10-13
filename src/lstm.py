@@ -120,7 +120,14 @@ class LSTMForecaster(BaseForecaster):
         t0 = time.time()
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
-        dev = self.device or ("mps" if torch.backends.mps.is_available() else "cpu")
+        if self.device:
+            dev = self.device
+        elif torch.cuda.is_available():  # Colab GPU
+            dev = "cuda"
+        elif torch.backends.mps.is_available():  # Apple silicon
+            dev = "mps"
+        else:
+            dev = "cpu"
         self.device_ = dev
 
         tr = train.sort_values(time_col).reset_index(drop=True)

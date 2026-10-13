@@ -227,3 +227,89 @@ def september_rebound(train, time_col="datetime"):
                  x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
     fig.tight_layout()
     return _save(fig, "eda_september"), fig
+
+
+MODEL_LABEL = {
+    "persistence": "Persistence",
+    "seasonal_naive_24h": "Seasonal naive 24 h",
+    "seasonal_naive_168h": "Seasonal naive 168 h",
+    "weekly_profile_4w": "Weekly profile, 4 wk (diagnostic)",
+    "chronos2_independent": "Chronos-2 independent",
+    "chronos2_joint": "Chronos-2 joint",
+    "chronos2_independent+seasonal_adj": "Chronos-2 indep. + seasonal adj.",
+    "chronos2_joint+seasonal_adj": "Chronos-2 joint + seasonal adj.",
+    "lstm": "LSTM",
+}
+
+
+def mae_comparison(table: pd.DataFrame, window: str, models: list[str], name: str | None = None):
+    """Per-pollutant MAE by model, one panel per pollutant (scales differ).
+
+    Bars are neutral; the best model in each panel is highlighted and is the
+    only one carrying a value label, so the panel answers "who wins here?"
+    """
+    style()
+    sub = table[(table.window == window) & table.model.isin(models)].set_index("model").loc[models]
+    cols = ["CO", "NO2", "O3", "PM10", "PM25", "avg_MAE"]
+    titles = ["CO", "NO₂", "O₃", "PM10", "PM2.5", "Average MAE"]
+    fig, axes = plt.subplots(1, len(cols), figsize=(14, 0.42 * len(models) + 1.4), sharey=True)
+    y = np.arange(len(models))
+    for ax, col, title in zip(axes, cols, titles):
+        v = sub[col].to_numpy()
+        best = int(np.nanargmin(v))
+        colors = ["#c3c2b7"] * len(v)
+        colors[best] = "#2a78d6"
+        ax.barh(y, v, color=colors, height=0.66)
+        ax.text(v[best], best, f" {v[best]:.3g}", va="center", ha="left", fontsize=8, color=INK)
+        ax.set_title(title)
+        ax.set_xlim(0, np.nanmax(v) * 1.28)
+        ax.grid(axis="y", visible=False)
+        ax.invert_yaxis() if ax is axes[0] else None
+    axes[0].set_yticks(y, [MODEL_LABEL.get(m, m) for m in models])
+    fig.suptitle(f"MAE per pollutant, window '{window}' (blue = best in panel; lower is better)",
+                 x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
+    fig.tight_layout()
+    return _save(fig, name or f"results_mae_{window}"), fig
+
+
+def observed_vs_predicted(window_df: pd.DataFrame, preds: dict[str, pd.DataFrame], name: str,
+                          title: str, time_col: str = "datetime"):
+    """Observed (ink) against each model's forecast, one panel per pollutant."""
+    from matplotlib.lines import Line2D
+
+    style()
+    fig, axes = plt.subplots(len(TARGETS), 1, figsize=(11, 9.5), sharex=True)
+    t = window_df[time_col].to_numpy()
+    for ax, col in zip(axes, TARGETS):
+        ax.plot(t, window_df[col].to_numpy(), color=INK, lw=0.9)
+        for m, p in preds.items():
+            ax.plot(t, p[col].to_numpy(), color=MODEL_COLOR.get(m, "#4a3aa7"), lw=1.3, alpha=0.95)
+        ax.set_title(_title(col))
+    handles = [Line2D([], [], color=INK, lw=1.2)] + [Line2D([], [], color=MODEL_COLOR.get(m, "#4a3aa7"), lw=2) for m in preds]
+    fig.legend(handles, ["Observed"] + [MODEL_LABEL.get(m, m) for m in preds], loc="upper right",
+               ncol=len(preds) + 1, bbox_to_anchor=(0.995, 1.0))
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
+    fig.tight_layout()
+    return _save(fig, name), fig
+
+
+def horizon_profile(blocks: dict[str, pd.DataFrame], name: str, title: str):
+    """MAE per pollutant for week 1 / 2 / 3 of the horizon, one line per model."""
+    from matplotlib.lines import Line2D
+
+    style()
+    cols = ["CO", "NO2", "O3", "PM10", "PM25"]
+    titles = ["CO", "NO₂", "O₃", "PM10", "PM2.5"]
+    fig, axes = plt.subplots(1, len(cols), figsize=(13, 2.9))
+    for ax, col, tt in zip(axes, cols, titles):
+        for m, b in blocks.items():
+            ax.plot([1, 2, 3], b[col].to_numpy(), color=MODEL_COLOR.get(m, "#4a3aa7"), lw=2, marker="o", ms=4)
+        ax.set_xticks([1, 2, 3], ["wk 1", "wk 2", "wk 3"])
+        ax.set_title(tt)
+    axes[0].set_ylabel("MAE")
+    handles = [Line2D([], [], color=MODEL_COLOR.get(m, "#4a3aa7"), lw=2, marker="o", ms=4) for m in blocks]
+    fig.legend(handles, [MODEL_LABEL.get(m, m) for m in blocks], loc="upper right", ncol=len(blocks),
+               bbox_to_anchor=(0.995, 1.0))
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
+    fig.tight_layout()
+    return _save(fig, name), fig

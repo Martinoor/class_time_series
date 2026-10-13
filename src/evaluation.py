@@ -122,3 +122,32 @@ def log_results(rows: list[dict], path: Path | str | None = None) -> pd.DataFram
             new = pd.concat([old, new], ignore_index=True)
     new.to_csv(path, index=False)
     return new
+
+
+def run_model(make, windows: dict, names=None, keep_preds=("primary", "sep2023"), label=None):
+    """Fit a fresh model per window on that window's history, predict, score.
+
+    `make` is a zero-argument factory, so no state leaks between windows.
+    Returns (rows, preds) where preds maps window name -> prediction frame
+    (only for `keep_preds`, to keep memory small).
+    """
+    rows, preds = [], {}
+    for wname in names or list(windows):
+        hist, win = windows[wname]
+        model = make()
+        pred = model.fit(hist).predict(win)
+        name = label or model.name
+        rows.append({"model": name, "window": wname, "window_start": win[TIME_COL].iloc[0], **score(win, pred)})
+        if wname in keep_preds:
+            preds[wname] = pred
+    return rows, preds
+
+
+def summarize(rows: list[dict], windows=("primary", "sep2023")) -> pd.DataFrame:
+    """One line per model: avg MAE on the named windows plus rolling-fold mean/std."""
+    t = mae_table(rows)
+    out = t[t.window.isin(windows)].pivot(index="model", columns="window", values="avg_MAE")
+    roll = t[t.window.str.startswith("fold_")].groupby("model")["avg_MAE"]
+    out["rolling_mean"] = roll.mean()
+    out["rolling_std"] = roll.std()
+    return out
