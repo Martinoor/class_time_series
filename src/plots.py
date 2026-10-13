@@ -13,9 +13,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import sys
+
 import matplotlib
 
-matplotlib.use("Agg")
+if "ipykernel" not in sys.modules:
+    # Headless scripts: render to files only. Inside a notebook, keep the
+    # inline backend so figures are displayed as well as saved.
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

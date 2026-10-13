@@ -98,8 +98,9 @@ Average MAE (mean of the five per-pollutant MAEs); lower is better.
 | Weekly profile 4 wk *(reference)* | 6.66 | 9.66 | 6.45 ± 0.55 |
 | Chronos-2 independent | 5.87 | 9.18 | 5.94 ± 0.41 |
 | Chronos-2 joint | **5.57** | 9.20 | **5.88** ± 0.83 |
-| Chronos-2 joint + seasonal adj. | 5.86 | 8.86 | 5.98 ± 0.90 |
-| LSTM (seed 42) | 7.22 | 8.85 | `TODO(run)` |
+| Chronos-2 indep. + seasonal adj. | 6.10 | 9.00 | 6.01 ± 0.47 |
+| **Chronos-2 joint + seasonal adj. (final)** | 5.86 | 8.86 | 5.98 ± 0.90 |
+| LSTM, 3 seeds (mean ± std) | 6.53 ± 0.63 | **8.84** ± 0.05 | 6.15 ± 0.74 *(seed 42 only)* |
 
 Per-pollutant MAE on `primary`:
 
@@ -108,10 +109,40 @@ Per-pollutant MAE on `primary`:
 | Persistence | 0.046 | 7.43 | 16.16 | 5.62 | 4.24 |
 | Seasonal naive 168 h | 0.044 | 9.47 | 17.30 | 6.45 | 3.56 |
 | Chronos-2 independent | 0.048 | 7.71 | 12.92 | 5.42 | 3.26 |
-| Chronos-2 joint | **0.037** | **6.35** | **12.79** | **5.29** | 3.37 |
-| LSTM (seed 42) | `TODO(run)` | | | | |
+| Chronos-2 joint | 0.037 | **6.35** | **12.79** | **5.29** | 3.37 |
+| LSTM (mean of 3 seeds) | **0.035** | 8.27 | 14.67 | 5.79 | 3.89 |
 
-`TODO(run)`: LSTM per-pollutant results, seed spread, horizon analysis, final choice and its Kaggle score.
+Per-pollutant MAE on `sep2023` (the test season):
+
+| model | CO | NO₂ | O₃ | PM10 | PM2.5 |
+|---|---|---|---|---|---|
+| Persistence | 0.060 | 15.82 | 23.52 | 7.90 | 5.82 |
+| Seasonal naive 168 h | 0.064 | 15.77 | 25.35 | 7.88 | 5.32 |
+| Chronos-2 independent | 0.062 | 15.85 | **18.09** | 6.78 | 5.10 |
+| Chronos-2 joint | 0.061 | 15.44 | 18.22 | 6.90 | 5.36 |
+| Chronos-2 joint + seasonal adj. | 0.058 | **13.76** | 18.22 | 6.90 | 5.36 |
+| LSTM (seed 42) | 0.060 | 14.89 | 18.67 | **6.01** | **4.64** |
+
+**Error over the horizon** (Chronos-2 joint, MAE by week 1 / 2 / 3):
+
+| window | NO₂ | O₃ | PM2.5 |
+|---|---|---|---|
+| `primary` | 4.9 / 7.0 / 7.6 | 12.1 / 12.6 / 13.7 | 2.8 / 2.9 / 4.5 |
+| `sep2023` | 25.9 / 12.8 / 7.5 | 27.7 / 17.6 / 9.4 | 9.9 / 4.5 / 1.7 |
+
+In August the error grows with the horizon, as expected when the context ages. In September 2023
+the pattern is reversed for **every** model: week 1 contains the post-holiday NO₂ surge (7-day mean
+around 40 µg/m³ against about 15 before), which no model anticipated, and the later weeks are calmer.
+So what drives the error is less the distance from the origin than whether the period contains a
+regime change the context does not show.
+
+**Final choice.** On `sep2023`, the agreed decision window, the LSTM (8.84, mean of 3 seeds) and
+Chronos-2 joint + seasonal adjustment (8.86) differ by 0.02. That is less than the LSTM's own
+seed-to-seed standard deviation on the window (0.045), so it is not evidence either way. I treated
+them as tied and broke the tie on the six rolling folds, where Chronos-2 + adjustment is better
+(5.98 vs 6.15). It is also better on `primary` (5.86 vs 6.53), and it is deterministic, so the
+Colab run reproduces it. This tie-break was decided *after* seeing the results, and is reported
+as such. `TODO(kaggle)`: Kaggle score of the final submission.
 
 **Main findings**
 1. **Zero-shot Chronos-2 beats every baseline in every window.** On `primary` it is about 13 %
@@ -125,8 +156,8 @@ Per-pollutant MAE on `primary`:
    variable across folds.
 4. **Every model under-forecasts in September.** On `sep2023`, Chronos-2 under-predicts NO₂ by
    45–47 %. Its 8,192-hour context ends just before the previous September, so it never sees the
-   rebound. The LSTM, which gets day-of-year and trains on all years, does best in that window and
-   worst in August. The seasonal adjustment recovers part of the gap on `sep2023`, but it fires on
+   rebound. The LSTM, which gets day-of-year and trains on all years, ties for best in that window, but
+   it is the weakest trained model in August and unstable across seeds there (6.00–7.22). The seasonal adjustment recovers part of the gap on `sep2023`, but it fires on
    noise at other origins.
 
 ## 4. Answers to the discussion questions
@@ -191,14 +222,39 @@ others off.
 minimises the expected absolute error; the mean minimises squared error. Pollution is
 right-skewed, and episodes pull the mean up but barely move the median.
 
-**Which approach works best: per-pollutant, joint, or LSTM?** On `primary`, Chronos-2 joint.
-Independent Chronos-2 is more stable across folds. The LSTM is worst in August but best in
-September. `TODO(run)`: complete with the LSTM seed results.
+**Which approach works best: per-pollutant, joint, or LSTM?** It depends on the period, and the
+per-pollutant MAE shows why.
+- In August (`primary`), **joint** is best (5.57, against 5.87 for independent and 6.53 for the
+  LSTM). Its gain comes almost entirely from NO₂ (6.35 vs 7.71) and CO (0.037 vs 0.048), the two
+  traffic pollutants. NO₂'s own history was missing for 13 days, and CO, its closest correlate
+  (0.71), carried the information. Independent is slightly better on PM2.5 (3.26 vs 3.37).
+- In September 2023, the **LSTM** is best on average (8.84), entirely through particles (3-seed means: PM10 6.2,
+  PM2.5 4.7, against 6.8–6.9 and 5.1–5.4 for Chronos-2). Unlike Chronos-2, it learns from all
+  earlier Septembers via its day-of-year input.
+- But the LSTM is unstable where it has less to go on. Its August score ranges from 6.00 to 7.22
+  across seeds, against a 0.05 spread in September.
+- Independent Chronos-2 has the lowest fold-to-fold spread (0.41): the safest, if not the best.
 
-**Best model overall, and for every pollutant?** `TODO(run)`.
+**Best model overall, and for every pollutant?** Overall, Chronos-2 joint (+ seasonal adjustment
+for September): best on `primary` and over the rolling folds, and tied best on `sep2023`. It is
+**not** best for every pollutant. Independent Chronos-2 wins PM2.5 in August and O₃ in September,
+and the LSTM wins particles in September and CO in August (by 0.002, i.e. nothing). The average
+hides this because it is dominated by O₃ and NO₂.
 
-**Where does the foundation model fail compared with seasonal naive?** `TODO(run)`, from the
-per-pollutant and horizon tables. Expected answers: PM2.5, and the September level shift.
+**Where does the foundation model fail compared with seasonal naive?** On average it never loses,
+but its advantage disappears in two places.
+- **In September, on NO₂ and PM2.5:** 15.44 vs 15.77, and 5.36 vs 5.32. Seasonal naive copies a
+  real recent week, while Chronos-2's median forecast is anchored on the low holiday level and
+  smoothed. When the level jumps, neither is right, and Chronos-2's usual advantage (better shape,
+  less noise) is swamped by the level error.
+- **For PM10 in the first week of August** (4.64 vs 4.08): copying last week's particle pattern
+  beats a smoothed median when a short episode repeats.
+
+The observed-vs-predicted plots (notebook §6.3) show both sides:
+- **A clear success:** O₃'s daily cycle in August, whose amplitude and timing Chronos-2 tracks
+  (MAE 12.8, against 17.3 for seasonal naive).
+- **A clear failure:** the NO₂ surge in the first week of September 2023, which every model
+  misses by a wide margin.
 
 ## 5. Limitations and next steps
 

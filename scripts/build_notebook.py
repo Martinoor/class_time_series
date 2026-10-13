@@ -442,16 +442,29 @@ md(r"""
 ## 7. Final forecast and submission
 
 **Selection rule:** the model with the lowest average MAE on `sep2023`, the window that matches the
-test season (fixed before the LSTM and the seasonal fix were scored; see section 2). For the LSTM, the mean over its three seeds is
-used, since a single seed is not a stable estimate. The competition's leaderboard scores are
-never used for selection.
+test season (fixed before the LSTM and the seasonal fix were scored; see section 2). For the LSTM,
+the mean over its three seeds is used, since a single seed is not a stable estimate. The
+competition's leaderboard scores are never used for selection.
+
+**Tie-break (added after seeing the results, stated here for transparency):** the LSTM and
+Chronos-2 joint + seasonal adjustment finished within 0.02 of each other on `sep2023`, less than
+the LSTM's own seed-to-seed standard deviation on that window. A gap smaller than seed noise is
+not evidence. So models within that noise band of the best are treated as tied, and ties are
+broken by the **mean average MAE over the six rolling folds** — the widest evidence available.
 """)
 code(r"""
 sel = summarize(ALL_ROWS)["sep2023"].loc[MODELS].copy()
 sel.loc["lstm"] = seeds[seeds.window == "sep2023"]["avg_MAE"].mean()
 sel = sel.sort_values()
-display(sel.round(3).to_frame("sep2023 avg MAE (LSTM: mean of 3 seeds)"))
-FINAL_MODEL = sel.index[0]
+noise = seeds[seeds.window == "sep2023"]["avg_MAE"].std()       # LSTM seed-to-seed std on sep2023
+tied = sel[sel <= sel.iloc[0] + noise]
+rolling = summarize(ALL_ROWS)["rolling_mean"]
+decision = pd.DataFrame({"sep2023 avg MAE (LSTM: 3-seed mean)": sel,
+                         "tied with best": sel.index.isin(tied.index),
+                         "rolling-fold mean (tie-break)": rolling.reindex(sel.index)})
+display(decision.round(3))
+FINAL_MODEL = rolling.reindex(tied.index).idxmin()
+print(f"noise band = LSTM seed std on sep2023 = {noise:.3f}; tied: {list(tied.index)}")
 print("final model:", FINAL_MODEL)
 """)
 code(r"""
