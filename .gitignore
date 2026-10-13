@@ -1,0 +1,23 @@
+# Data (never commit raw Kaggle files)
+data/raw/
+data/processed/
+*.zip
+
+# Credentials
+kaggle.json
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Notebook outputs kept, but no stray checkpoints
+.pytest_cache/
