@@ -70,12 +70,24 @@ class SeasonalNaive(BaseForecaster):
     With `season=WEEK` (168 h) this reproduces both the hour-of-day and the
     day-of-week pattern, which is why it is the baseline to beat. For horizons
     longer than the season, the forecast tiles the last full season forward.
+
+    Missing values in the last season are filled from the same position in
+    earlier seasons (t - 2*season, t - 3*season, ...), up to `max_back`
+    seasons back. This keeps the seasonal shape and uses only past data. A
+    plain forward fill would instead repeat one stale reading across the gap:
+    NO2 is unobserved for the 69 h before the competition's forecast origin,
+    so a forward fill would flatten most of a day and a half of the week being
+    copied. Anything still missing after `max_back` seasons falls back to the
+    series' last observed value.
     """
 
-    def __init__(self, season: int = WEEK, targets: list[str] | None = None):
+    def __init__(
+        self, season: int = WEEK, targets: list[str] | None = None, max_back: int = 8
+    ):
         if season < 1:
             raise ValueError(f"season must be >= 1, got {season}")
         self.season = season
+        self.max_back = max_back
         self.targets = list(targets) if targets is not None else list(TARGETS)
         self.tail_: pd.DataFrame | None = None
         self.name = f"seasonal_naive_{season}h"
@@ -87,8 +99,24 @@ class SeasonalNaive(BaseForecaster):
                 f"need at least {self.season} training rows for a {self.season}h season, "
                 f"got {len(tr)}"
             )
-        # Keep the last full season, gaps filled from older history of the same series.
-        self.tail_ = tr[self.targets].ffill().bfill().iloc[-self.season :].reset_index(drop=True)
+        values = tr[self.targets].to_numpy(dtype=float)
+        tail = values[-self.season :].copy()
+        # Fill holes from the same hour-of-season in older seasons, newest first.
+        for k in range(2, self.max_back + 2):
+            hole = np.isnan(tail)
+            if not hole.any():
+                break
+            start = len(values) - k * self.season
+            if start < 0:
+                break
+            older = values[start : start + self.season]
+            tail[hole] = older[hole]
+        # Last resort: the most recent observed value of each series.
+        hole = np.isnan(tail)
+        if hole.any():
+            last_obs = tr[self.targets].ffill().iloc[-1].to_numpy(dtype=float)
+            tail[hole] = np.broadcast_to(last_obs, tail.shape)[hole]
+        self.tail_ = pd.DataFrame(tail, columns=self.targets)
         return self
 
     def predict(self, future: pd.DataFrame, time_col: str = "datetime") -> pd.DataFrame:

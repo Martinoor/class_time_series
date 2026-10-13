@@ -1,0 +1,22 @@
+=== primary and sep2023 ===
+              model  window    CO    NO2     O3  PM10  PM25  avg_MAE
+        persistence primary 0.046  7.429 16.160 5.622 4.237    6.699
+ seasonal_naive_24h primary 0.045  7.429 14.254 6.212 4.210    6.430
+seasonal_naive_168h primary 0.044  9.469 17.303 6.450 3.555    7.364
+  weekly_profile_4w primary 0.052  8.605 14.991 6.278 3.382    6.662
+        persistence sep2023 0.060 15.820 23.521 7.904 5.819   10.625
+ seasonal_naive_24h sep2023 0.063 17.219 21.357 7.931 5.582   10.431
+seasonal_naive_168h sep2023 0.064 15.773 25.345 7.876 5.322   10.876
+  weekly_profile_4w sep2023 0.064 15.601 20.669 6.822 5.142    9.660
+
+=== rolling folds (fold_5 == primary): avg_MAE mean +/- std ===
+                        CO           NO2             O3          PM10          PM25        avg_MAE       
+                      mean    std   mean    std    mean    std   mean    std   mean    std    mean    std
+model                                                                                                    
+persistence          0.034  0.011  7.897  2.351  18.219  3.753  6.942  1.058  4.328  0.874   7.484  1.233
+seasonal_naive_168h  0.040  0.011  7.941  2.041  18.801  3.180  8.019  0.937  4.790  0.953   7.918  1.011
+seasonal_naive_24h   0.039  0.010  8.042  1.792  17.703  3.742  7.361  1.285  4.482  0.587   7.525  1.381
+weekly_profile_4w    0.038  0.008  6.686  1.297  15.182  2.343  6.638  0.469  3.695  0.805   6.448  0.550
+
+scored hours per window (primary): {'CO': np.int64(498), 'NO2': np.int64(394), 'O3': np.int64(504), 'PM10': np.int64(299), 'PM25': np.int64(491)}
+scored hours per window (sep2023): {'CO': np.int64(504), 'NO2': np.int64(503), 'O3': np.int64(504), 'PM10': np.int64(351), 'PM25': np.int64(504)}

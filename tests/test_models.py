@@ -136,3 +136,35 @@ def test_baselines_never_see_validation_data():
     tampered[TARGETS] = -999.0
     pred_b = SeasonalMean().fit(train).predict(tampered)
     pd.testing.assert_frame_equal(pred_a, pred_b)
+
+
+def test_seasonal_naive_fills_gaps_from_the_same_hour_in_earlier_weeks():
+    """A hole in the last week is filled from t-336, not by repeating a stale value."""
+    train, valid = split(make_frame(), horizon=168)
+    gappy = train.copy()
+    # Knock out the final 69 hours of NO2, as at the real forecast origin.
+    gappy.loc[gappy.index[-69:], "valeur_NO2"] = np.nan
+    pred = SeasonalNaive(168).fit(gappy).predict(valid)
+    two_weeks_back = train["valeur_NO2"].to_numpy()[-336:-168]
+    # The last 69 positions of the copied week must come from two weeks back.
+    np.testing.assert_allclose(pred["valeur_NO2"].to_numpy()[-69:], two_weeks_back[-69:])
+    # And they must not be a flat forward fill.
+    assert pred["valeur_NO2"].iloc[-69:].nunique() > 1
+
+
+def test_seasonal_naive_does_not_touch_observed_values():
+    train, valid = split(make_frame(), horizon=168)
+    gappy = train.copy()
+    gappy.loc[gappy.index[-10:], "valeur_NO2"] = np.nan
+    pred = SeasonalNaive(168).fit(gappy).predict(valid)
+    np.testing.assert_allclose(
+        pred["valeur_NO2"].to_numpy()[:-10], train["valeur_NO2"].to_numpy()[-168:-10]
+    )
+
+
+def test_seasonal_naive_falls_back_to_last_value_when_history_is_empty():
+    train, valid = split(make_frame(24 * 30), horizon=24)
+    gappy = train.copy()
+    gappy.loc[gappy.index[-24 * 20 :], "valeur_CO"] = np.nan  # longer than max_back weeks
+    pred = SeasonalNaive(168, max_back=1).fit(gappy).predict(valid)
+    assert pred.notna().all().all()
