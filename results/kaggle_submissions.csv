@@ -1,0 +1,2 @@
+date,file,model,kaggle_ref,public_mae,private_mae,val_primary_avg_mae,val_sep2023_avg_mae,note
+2026-10-13,submissions/2026-10-13_chronos2_joint.csv,chronos2_joint,57146036,4.91668,6.17491,5.568,9.196,"first submission; private score visible because the competition is closed: recorded, never used for model choice"

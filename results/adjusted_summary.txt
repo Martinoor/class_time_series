@@ -1,0 +1,46 @@
+adjustment factors chosen by the rule (1.0 = untouched):
+           CO   NO2   O3  PM10  PM25
+primary  1.00  1.00  1.0  1.00  1.41
+sep2023  1.19  1.55  1.0  1.00  1.00
+fold_0   1.00  0.86  1.0  1.00  0.85
+fold_1   1.00  0.95  1.0  1.15  1.00
+fold_2   1.00  1.00  1.0  1.00  1.00
+fold_3   0.84  0.90  1.0  1.00  1.00
+fold_4   1.00  1.00  1.0  1.00  0.69
+fold_5   1.00  1.00  1.0  1.00  1.41
+
+=== sep2023 ===
+                                      CO     NO2      O3   PM10   PM25  avg_MAE
+model                                                                          
+persistence                        0.060  15.820  23.521  7.904  5.819   10.625
+seasonal_naive_24h                 0.063  17.219  21.357  7.931  5.582   10.431
+seasonal_naive_168h                0.064  15.773  25.345  7.876  5.322   10.876
+weekly_profile_4w                  0.064  15.601  20.669  6.822  5.142    9.660
+chronos2_independent               0.062  15.845  18.093  6.782  5.095    9.175
+chronos2_joint                     0.061  15.438  18.222  6.900  5.360    9.196
+chronos2_independent+seasonal_adj  0.055  14.958  18.093  6.782  5.095    8.997
+chronos2_joint+seasonal_adj        0.058  13.762  18.222  6.900  5.360    8.860
+
+=== primary ===
+                                      CO    NO2      O3   PM10   PM25  avg_MAE
+model                                                                         
+persistence                        0.046  7.429  16.160  5.622  4.237    6.699
+seasonal_naive_24h                 0.045  7.429  14.254  6.212  4.210    6.430
+seasonal_naive_168h                0.044  9.469  17.303  6.450  3.555    7.364
+weekly_profile_4w                  0.052  8.605  14.991  6.278  3.382    6.662
+chronos2_independent               0.048  7.714  12.916  5.418  3.260    5.871
+chronos2_joint                     0.037  6.348  12.790  5.292  3.374    5.568
+chronos2_independent+seasonal_adj  0.048  7.714  12.916  5.418  4.381    6.095
+chronos2_joint+seasonal_adj        0.037  6.348  12.790  5.292  4.838    5.861
+
+=== rolling folds avg_MAE ===
+                                    mean    std
+model                                          
+persistence                        7.484  1.233
+seasonal_naive_24h                 7.525  1.381
+seasonal_naive_168h                7.918  1.011
+weekly_profile_4w                  6.448  0.550
+chronos2_independent               5.936  0.408
+chronos2_joint                     5.875  0.828
+chronos2_independent+seasonal_adj  6.010  0.472
+chronos2_joint+seasonal_adj        5.981  0.899
