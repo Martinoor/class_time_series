@@ -1,0 +1,30 @@
+primary  independent avg_MAE=5.871  (2.2s)
+primary  joint       avg_MAE=5.568  (1.4s)
+sep2023  independent avg_MAE=9.175  (1.6s)
+sep2023  joint       avg_MAE=9.196  (1.4s)
+fold_0   independent avg_MAE=6.300  (1.4s)
+fold_0   joint       avg_MAE=6.187  (1.4s)
+fold_1   independent avg_MAE=5.195  (1.4s)
+fold_1   joint       avg_MAE=4.602  (1.3s)
+fold_2   independent avg_MAE=6.053  (1.4s)
+fold_2   joint       avg_MAE=5.939  (1.3s)
+fold_3   independent avg_MAE=5.901  (1.4s)
+fold_3   joint       avg_MAE=5.811  (1.4s)
+fold_4   independent avg_MAE=6.296  (1.4s)
+fold_4   joint       avg_MAE=7.142  (1.4s)
+fold_5   independent avg_MAE=5.871  (1.4s)
+fold_5   joint       avg_MAE=5.568  (1.4s)
+
+=== primary and sep2023 ===
+               model  window    CO    NO2     O3  PM10  PM25  avg_MAE
+chronos2_independent primary 0.048  7.714 12.916 5.418 3.260    5.871
+      chronos2_joint primary 0.037  6.348 12.790 5.292 3.374    5.568
+chronos2_independent sep2023 0.062 15.845 18.093 6.782 5.095    9.175
+      chronos2_joint sep2023 0.061 15.438 18.222 6.900 5.360    9.196
+
+=== rolling folds avg_MAE mean +/- std ===
+                         CO           NO2             O3          PM10          PM25        avg_MAE       
+                       mean    std   mean    std    mean    std   mean    std   mean    std    mean    std
+model                                                                                                     
+chronos2_independent  0.032  0.009  6.756  0.992  13.725  1.950  5.825  0.850  3.342  0.759   5.936  0.408
+chronos2_joint        0.031  0.009  6.238  1.906  13.791  2.458  5.925  0.926  3.389  0.716   5.875  0.828
