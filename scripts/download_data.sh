@@ -3,7 +3,7 @@
 set -euo pipefail
 
 COMP="x-hec-ts-2025-predicting-air-quality-in-paris"
-RAW="$(cd "$(dirname "$0")" && pwd)/data/raw"
+RAW="$(cd "$(dirname "$0")/.." && pwd)/data/raw"
 
 if [ ! -f "$HOME/.kaggle/kaggle.json" ] && [ ! -f "$HOME/.kaggle/access_token" ]; then
   echo "No Kaggle credentials found at ~/.kaggle/kaggle.json" >&2

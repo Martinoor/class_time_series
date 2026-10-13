@@ -1,6 +1,7 @@
 """Loading and auditing the Kaggle files.
 
-`id` in the raw files is a CET timestamp string. It is parsed into a
+`id` in the raw files is an hour-resolution CET timestamp string such as
+"2024-09-03 23" (no minutes). It is parsed with an explicit format into a
 `datetime` column; the `id` column is preserved untouched, because the
 submission must carry it back verbatim.
 """
@@ -16,6 +17,7 @@ from metrics import TARGETS
 
 RAW = Path(__file__).resolve().parents[1] / "data" / "raw"
 TIME_COL = "datetime"
+ID_FORMAT = "%Y-%m-%d %H"  # e.g. "2024-09-03 23"
 
 
 def load_raw(raw_dir: Path | str = RAW) -> dict[str, pd.DataFrame]:
@@ -36,7 +38,7 @@ def load_raw(raw_dir: Path | str = RAW) -> dict[str, pd.DataFrame]:
     for key in ("train", "test", "sample_submission"):
         df = pd.read_csv(raw_dir / f"{key}.csv")
         if "id" in df.columns:
-            df[TIME_COL] = pd.to_datetime(df["id"])
+            df[TIME_COL] = pd.to_datetime(df["id"], format=ID_FORMAT)
             df = df.sort_values(TIME_COL).reset_index(drop=True)
         out[key] = df
     return out
@@ -118,10 +120,15 @@ def make_submission(
 ) -> pd.DataFrame:
     """Write a submission aligned to `sample_submission` by `id`.
 
-    Guards the three mistakes that silently cost a submission: a reordered or
-    altered `id` column, missing rows, and NaN or negative concentrations.
+    Guards the mistakes that silently cost a submission: a reordered or
+    altered `id` column, missing rows, NaN or negative concentrations, and
+    columns written in a different order from the sample file (which lists
+    NO2 before CO, unlike `TARGETS`).
     """
-    targets = list(targets) if targets is not None else list(TARGETS)
+    if targets is None:
+        # Follow the sample file's own column order, not ours.
+        targets = [c for c in sample_submission.columns if c != "id"]
+    targets = list(targets)
     sub = sample_submission[["id"]].copy()
 
     pred = predictions.copy()

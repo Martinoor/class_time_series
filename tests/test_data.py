@@ -8,10 +8,14 @@ from data import make_submission
 from metrics import TARGETS
 
 
+# The real sample file lists NO2 before CO.
+SAMPLE_ORDER = ["valeur_NO2", "valeur_CO", "valeur_O3", "valeur_PM10", "valeur_PM25"]
+
+
 def make_sample(n=504):
-    ids = pd.date_range("2025-09-24 00:00", periods=n, freq="h").astype(str)
+    ids = pd.date_range("2024-09-03 23:00", periods=n, freq="h").strftime("%Y-%m-%d %H")
     sub = pd.DataFrame({"id": ids})
-    for col in TARGETS:
+    for col in SAMPLE_ORDER:
         sub[col] = 0.0
     return sub
 
@@ -21,7 +25,7 @@ def test_submission_preserves_id_order_and_columns(tmp_path):
     preds = pd.DataFrame({c: np.arange(len(sample), dtype=float) for c in TARGETS})
     out = make_submission(preds, sample, tmp_path / "s.csv")
     assert out["id"].equals(sample["id"])
-    assert list(out.columns) == ["id"] + TARGETS
+    assert list(out.columns) == list(sample.columns)
     assert len(out) == len(sample)
 
 
@@ -79,3 +83,35 @@ def test_duplicate_ids_in_predictions_raise(tmp_path):
     preds = pd.concat([preds, preds.iloc[[0]]], ignore_index=True)
     with pytest.raises(ValueError, match="duplicate ids"):
         make_submission(preds, sample, tmp_path / "s.csv")
+
+
+def test_submission_follows_sample_column_order_not_targets_order(tmp_path):
+    sample = make_sample()
+    # Predictions arrive in TARGETS order (CO first)...
+    preds = pd.DataFrame({c: np.ones(len(sample)) for c in TARGETS})
+    out = make_submission(preds, sample, tmp_path / "s.csv")
+    written = pd.read_csv(tmp_path / "s.csv")
+    # ...but the file must match the sample (NO2 first).
+    assert list(written.columns) == list(sample.columns)
+    assert list(out.columns) == ["id"] + SAMPLE_ORDER
+
+
+def test_hour_only_ids_parse_to_the_right_hour(tmp_path):
+    from data import ID_FORMAT
+
+    ts = pd.to_datetime(pd.Series(["2024-09-03 23", "2024-09-04 00"]), format=ID_FORMAT)
+    assert ts.iloc[0] == pd.Timestamp("2024-09-03 23:00")
+    assert ts.iloc[1] - ts.iloc[0] == pd.Timedelta(hours=1)
+
+
+def test_load_raw_on_the_real_files():
+    from pathlib import Path
+
+    from data import RAW, load_raw
+
+    if not (Path(RAW) / "train.csv").exists():
+        pytest.skip("Kaggle data not downloaded")
+    d = load_raw()
+    assert len(d["test"]) == 504
+    assert d["train"]["datetime"].is_monotonic_increasing
+    assert d["test"]["datetime"].min() - d["train"]["datetime"].max() == pd.Timedelta(hours=1)
