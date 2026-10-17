@@ -142,7 +142,16 @@ seed-to-seed standard deviation on the window (0.045), so it is not evidence eit
 them as tied and broke the tie on the six rolling folds, where Chronos-2 + adjustment is better
 (5.98 vs 6.15). It is also better on `primary` (5.86 vs 6.53), and it is deterministic, so the
 Colab run reproduces it. This tie-break was decided *after* seeing the results, and is reported
-as such. `TODO(kaggle)`: Kaggle score of the final submission.
+as such.
+
+**Test result (Kaggle).** The final submission scored MAE **5.57 public / 6.80 private**. The plain
+Chronos-2 joint forecast, uploaded earlier as a first reference, scored **4.92 / 6.17**. The two
+forecasts differ only in NO₂ and CO, so on the test period the seasonal adjustment made the forecast
+*worse*. September 2024 evidently did not rebound by the ×1.76 that the earlier years suggested for
+NO₂. This is the risk flagged above: the adjustment's validation gain rested on two or three past
+years, and on the same window that motivated it. I kept the final model as chosen. Switching to the
+better test score after the fact would turn the test set into a validation set. The competition is
+closed, so the private score was visible, but neither score was used for any decision.
 
 **Main findings**
 1. **Zero-shot Chronos-2 beats every baseline in every window.** On `primary` it is about 13 %
@@ -263,7 +272,8 @@ The observed-vs-predicted plots (notebook §6.3) show both sides:
   Septembers exist to learn the post-holiday rebound from.
 - **Evaluation:** a 504-hour window is a small, autocorrelated sample. Differences of a few
   percent are within the fold-to-fold spread (std 0.4–1.4). The selection window and the seasonal
-  fix were both chosen after noticing the September shift, so their gains are optimistic.
+  fix were both chosen after noticing the September shift, so their gains were optimistic. The test
+  confirmed this: the adjustment that won on `sep2023` cost about 0.6 MAE on the test period.
 - **Model:** Chronos-2's context cannot reach the previous year's same season, and zero-shot
   means it cannot learn Paris-specific calendar effects. No weather is used, and weather drives
   particles and ozone.
