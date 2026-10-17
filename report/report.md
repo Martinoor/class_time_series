@@ -94,9 +94,10 @@ Every validation window is a 504-hour block, and models see only rows strictly b
 - **Development runs:** Apple M3 (MPS), torch 2.10.0, same package versions otherwise.
 - **Reproducibility check:** the baselines and every Chronos-2 variant give **identical scores on
   both machines to three decimals**, so the final submission does not depend on the hardware.
-  The LSTM re-trains and moves slightly. On Colab, its `sep2023` 3-seed mean is 8.82 ± 0.08
-  (Mac: 8.84 ± 0.05) and its rolling-fold mean (seed 42) is 6.32 (Mac: 6.15). The tie and the
-  final choice are the same on both. LSTM numbers in the tables below are from the Mac run.
+  The LSTM re-trains and moves: its `sep2023` 3-seed mean is 8.82 ± 0.08 on Colab (Mac 8.84 ±
+  0.05), its `primary` mean 7.00 ± 0.68 (Mac 6.53 ± 0.63), and its rolling-fold mean (seed 42)
+  6.32 (Mac 6.15). The tie and the final choice are the same on both machines. **All numbers in
+  this report are from the Colab run** (`notebooks/main_colab.ipynb`).
 
 ## 3. Results
 
@@ -112,7 +113,7 @@ Average MAE (mean of the five per-pollutant MAEs); lower is better.
 | Chronos-2 joint | **5.57** | 9.20 | **5.88** ± 0.83 |
 | Chronos-2 indep. + seasonal adj. | 6.10 | 9.00 | 6.01 ± 0.47 |
 | **Chronos-2 joint + seasonal adj. (final)** | 5.86 | 8.86 | 5.98 ± 0.90 |
-| LSTM, 3 seeds (mean ± std) | 6.53 ± 0.63 | **8.84** ± 0.05 | 6.15 ± 0.74 *(seed 42 only)* |
+| LSTM, 3 seeds (mean ± std) | 7.00 ± 0.68 | **8.82** ± 0.08 | 6.32 ± 0.33 *(seed 42 only)* |
 
 Per-pollutant MAE on `primary`:
 
@@ -122,7 +123,7 @@ Per-pollutant MAE on `primary`:
 | Seasonal naive 168 h | 0.044 | 9.47 | 17.30 | 6.45 | 3.56 |
 | Chronos-2 independent | 0.048 | 7.71 | 12.92 | 5.42 | 3.26 |
 | Chronos-2 joint | 0.037 | **6.35** | **12.79** | **5.29** | 3.37 |
-| LSTM (mean of 3 seeds) | **0.035** | 8.27 | 14.67 | 5.79 | 3.89 |
+| LSTM (mean of 3 seeds) | **0.034** | 8.50 | 15.77 | 6.55 | 4.17 |
 
 Per-pollutant MAE on `sep2023` (the test season):
 
@@ -133,7 +134,7 @@ Per-pollutant MAE on `sep2023` (the test season):
 | Chronos-2 independent | 0.062 | 15.85 | **18.09** | 6.78 | 5.10 |
 | Chronos-2 joint | 0.061 | 15.44 | 18.22 | 6.90 | 5.36 |
 | Chronos-2 joint + seasonal adj. | 0.058 | **13.76** | 18.22 | 6.90 | 5.36 |
-| LSTM (seed 42) | 0.060 | 14.89 | 18.67 | **6.01** | **4.64** |
+| LSTM (seed 42) | 0.060 | 14.81 | 18.72 | **6.01** | **4.58** |
 
 **Error over the horizon** (Chronos-2 joint, MAE by week 1 / 2 / 3):
 
@@ -148,12 +149,12 @@ around 40 µg/m³ against about 15 before), which no model anticipated, and the 
 So what drives the error is less the distance from the origin than whether the period contains a
 regime change the context does not show.
 
-**Final choice.** On `sep2023`, the agreed decision window, the LSTM (8.84, mean of 3 seeds) and
-Chronos-2 joint + seasonal adjustment (8.86) differ by 0.02. That is less than the LSTM's own
-seed-to-seed standard deviation on the window (0.045), so it is not evidence either way. I treated
+**Final choice.** On `sep2023`, the agreed decision window, the LSTM (8.82, mean of 3 seeds) and
+Chronos-2 joint + seasonal adjustment (8.86) differ by 0.04. That is less than the LSTM's own
+seed-to-seed standard deviation on the window (0.076), so it is not evidence either way. I treated
 them as tied and broke the tie on the six rolling folds, where Chronos-2 + adjustment is better
-(5.98 vs 6.15; 6.32 on Colab). It is also better on `primary` (5.86 vs 6.53), and it is
-deterministic: the Colab run reproduced it exactly and selected the same model (§2.4). This tie-break was decided *after* seeing the results, and is reported
+(5.98 vs 6.32). It is also better on `primary` (5.86 vs 7.00), and it is deterministic: the
+Mac and Colab runs give identical scores for it, and both select it (§2.4). This tie-break was decided *after* seeing the results, and is reported
 as such.
 
 **Test result (Kaggle).** The final submission scored MAE **5.57 public / 6.80 private**. The plain
@@ -167,7 +168,7 @@ closed, so the private score was visible, but neither score was used for any dec
 
 **Main findings**
 1. **Zero-shot Chronos-2 beats every baseline in every window.** On `primary` it is about 13 %
-   better than the best baseline, and it has the lowest fold-to-fold spread.
+   better than the best baseline, with a low fold-to-fold spread (0.41 for the independent version).
 2. **Seasonal naive 168 h does not beat persistence on average.** It copies one specific noisy
    week. Averaging four weeks of the same hour × weekday profile beats both, so the weekly shape is
    real, and the problem is the noise in a single copied week.
@@ -178,7 +179,7 @@ closed, so the private score was visible, but neither score was used for any dec
 4. **Every model under-forecasts in September.** On `sep2023`, Chronos-2 under-predicts NO₂ by
    45–47 %. Its 8,192-hour context ends just before the previous September, so it never sees the
    rebound. The LSTM, which gets day-of-year and trains on all years, ties for best in that window, but
-   it is the weakest trained model in August and unstable across seeds there (6.00–7.22). The seasonal adjustment recovers part of the gap on `sep2023`, but it fires on
+   it is the weakest trained model in August and unstable across seeds there (6.61–7.79; mean 7.00, worse than persistence at 6.70). The seasonal adjustment recovers part of the gap on `sep2023`, but it fires on
    noise at other origins.
 
 ## 4. Answers to the discussion questions
@@ -245,21 +246,23 @@ right-skewed, and episodes pull the mean up but barely move the median.
 
 **Which approach works best: per-pollutant, joint, or LSTM?** It depends on the period, and the
 per-pollutant MAE shows why.
-- In August (`primary`), **joint** is best (5.57, against 5.87 for independent and 6.53 for the
+- In August (`primary`), **joint** is best (5.57, against 5.87 for independent and 7.00 for the
   LSTM). Its gain comes almost entirely from NO₂ (6.35 vs 7.71) and CO (0.037 vs 0.048), the two
   traffic pollutants. NO₂'s own history was missing for 13 days, and CO, its closest correlate
   (0.71), carried the information. Independent is slightly better on PM2.5 (3.26 vs 3.37).
-- In September 2023, the **LSTM** is best on average (8.84), entirely through particles (3-seed means: PM10 6.2,
-  PM2.5 4.7, against 6.8–6.9 and 5.1–5.4 for Chronos-2). Unlike Chronos-2, it learns from all
+- In September 2023, the **LSTM** is best on average (8.82), entirely through particles (3-seed means: PM10 6.1,
+  PM2.5 4.6, against 6.8–6.9 and 5.1–5.4 for Chronos-2). Unlike Chronos-2, it learns from all
   earlier Septembers via its day-of-year input.
-- But the LSTM is unstable where it has less to go on. Its August score ranges from 6.00 to 7.22
-  across seeds, against a 0.05 spread in September.
-- Independent Chronos-2 has the lowest fold-to-fold spread (0.41): the safest, if not the best.
+- But the LSTM is unstable where it has less to go on. Its August score ranges from 6.61 to 7.79
+  across seeds, against a 0.08 spread in September, and its August mean is worse than persistence.
+- Across the rolling folds, the LSTM (seed 42) has the smallest spread (0.33), but that is one seed.
+  Its seed-to-seed variation in August is twice that. Independent Chronos-2 (0.41) is the most
+  stable model whose result does not depend on a random seed.
 
 **Best model overall, and for every pollutant?** Overall, Chronos-2 joint (+ seasonal adjustment
 for September): best on `primary` and over the rolling folds, and tied best on `sep2023`. It is
 **not** best for every pollutant. Independent Chronos-2 wins PM2.5 in August and O₃ in September,
-and the LSTM wins particles in September and CO in August (by 0.002, i.e. nothing). The average
+and the LSTM wins particles in September and CO in August (by 0.003, i.e. nothing). The average
 hides this because it is dominated by O₃ and NO₂.
 
 **Where does the foundation model fail compared with seasonal naive?** On average it never loses,
