@@ -1,6 +1,6 @@
 """Seasonal level adjustment on top of any forecaster.
 
-Motivation (SPEC.md, PROGRESS.md): forecasters anchored on the recent level
+Motivation (report, sections 1 and 3): forecasters anchored on the recent level
 under-predict early September, because the weeks before the origin are the
 August holidays and traffic pollutants rebound afterwards. Chronos-2 cannot
 learn this in context: its 8192 h (341-day) window ends just short of the

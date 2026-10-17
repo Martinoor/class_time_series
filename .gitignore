@@ -21,3 +21,9 @@ venv/
 
 # Notebook outputs kept, but no stray checkpoints
 .pytest_cache/
+
+# Local-only project notes (kept out of the public repo)
+CLAUDE.md
+PROGRESS.md
+SPEC.md
+.claude-notes/

@@ -1,6 +1,6 @@
 """Validation windows and scoring shared by every model.
 
-Windows (see SPEC.md "Working decision"):
+Windows (see the report, section 2.1):
 
 * ``primary``  -- the last 504 h of train (2024-08-13 23 -> 2024-09-03 22).
   The PDF asks for one validation period shared by all comparisons, and the
