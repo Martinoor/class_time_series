@@ -86,6 +86,18 @@ Every validation window is a 504-hour block, and models see only rows strictly b
 - Unit tests check each of these, using a series whose value equals its row index, so any future
   value entering a feature would be visible by its size.
 
+### 2.4 Run environment and reproducibility
+- **Final run (Google Colab, as the assignment requires):** NVIDIA **Tesla T4** GPU (`cuda:0`),
+  Linux x86_64, torch 2.11.0+cu130, `chronos-forecasting` 2.3.2, model `amazon/chronos-2`
+  (119.5 M parameters, max context 8,192 h). Chronos-2 settings: prediction length 504, quantiles
+  0.1/0.5/0.9, point forecast = median, no covariates, batch defaults.
+- **Development runs:** Apple M3 (MPS), torch 2.10.0, same package versions otherwise.
+- **Reproducibility check:** the baselines and every Chronos-2 variant give **identical scores on
+  both machines to three decimals**, so the final submission does not depend on the hardware.
+  The LSTM re-trains and moves slightly. On Colab, its `sep2023` 3-seed mean is 8.82 ± 0.08
+  (Mac: 8.84 ± 0.05) and its rolling-fold mean (seed 42) is 6.32 (Mac: 6.15). The tie and the
+  final choice are the same on both. LSTM numbers in the tables below are from the Mac run.
+
 ## 3. Results
 
 Average MAE (mean of the five per-pollutant MAEs); lower is better.
@@ -140,8 +152,8 @@ regime change the context does not show.
 Chronos-2 joint + seasonal adjustment (8.86) differ by 0.02. That is less than the LSTM's own
 seed-to-seed standard deviation on the window (0.045), so it is not evidence either way. I treated
 them as tied and broke the tie on the six rolling folds, where Chronos-2 + adjustment is better
-(5.98 vs 6.15). It is also better on `primary` (5.86 vs 6.53), and it is deterministic, so the
-Colab run reproduces it. This tie-break was decided *after* seeing the results, and is reported
+(5.98 vs 6.15; 6.32 on Colab). It is also better on `primary` (5.86 vs 6.53), and it is
+deterministic: the Colab run reproduced it exactly and selected the same model (§2.4). This tie-break was decided *after* seeing the results, and is reported
 as such.
 
 **Test result (Kaggle).** The final submission scored MAE **5.57 public / 6.80 private**. The plain

@@ -1,0 +1,12 @@
+{
+  "model": "amazon/chronos-2",
+  "chronos_forecasting": "2.3.2",
+  "torch": "2.11.0+cu130",
+  "device": "cuda:0",
+  "params_millions": 119.5,
+  "context_length_max": 8192,
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "gpu": "Tesla T4",
+  "source": "pasted by the user from the Colab run of notebooks/main.ipynb, 2026-10-17"
+}
